@@ -12,7 +12,7 @@ This is a simple web-based spam classifier built with Flask, SQLite, and Scikit-
 
 ## Installation
 1. Clone this repository:
-git clone https://github.com/your-username/spam-checker.git
+git clone https://github.com/your-username/spam_checker.git
 
 
 2. Install dependencies:
