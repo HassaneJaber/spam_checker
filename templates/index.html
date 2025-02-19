@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spam Message Classifier</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="flex flex-col items-center justify-center h-screen bg-gray-100 text-black">
+    <div class="bg-white p-6 rounded-lg shadow-lg text-center w-96">
+        <!-- Fixed Heading with ID -->
+        <h1 id="heading" class="text-2xl font-bold mb-4">Spam Message Classifier</h1>
+
+        
+        <input type="text" id="message" placeholder="Enter a message..."
+            class="w-full p-2 border rounded">
+        
+        <div class="mt-4">
+            <button onclick="checkSpam()" class="px-4 py-2 bg-blue-500 text-white rounded">Check</button>
+            <button onclick="startRecording()" class="ml-2 px-4 py-2 bg-green-500 text-white rounded">🎤 Speak</button>
+        </div>
+
+        <p id="result" class="mt-4 text-lg font-bold"></p>
+        <p id="confidence" class="text-gray-600"></p>
+
+        <div class="mt-4">
+            <button onclick="reportMessage()" class="px-4 py-2 bg-red-500 text-white rounded">Report Incorrect</button>
+            <button onclick="toggleDarkMode()" class="ml-2 px-4 py-2 bg-gray-600 text-white rounded">Toggle Dark Mode</button>
+        </div>
+
+        <p id="stats" class="mt-4 text-lg font-bold"></p>
+    </div>
+
+    <script>
+        function checkSpam() {
+            let message = document.getElementById("message").value;
+            fetch("/predict", {
+                method: "POST",
+                body: new URLSearchParams({ "message": message }),
+                headers: { "Content-Type": "application/x-www-form-urlencoded" }
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("result").innerText = "Prediction: " + data.result;
+                document.getElementById("confidence").innerText = "Confidence: " + data.confidence;
+                updateStats();
+            })
+            .catch(error => console.error("Error:", error));
+        }
+
+        function startRecording() {
+            let recognition = new webkitSpeechRecognition();
+            recognition.lang = "en-US";
+            recognition.onresult = function(event) {
+                document.getElementById("message").value = event.results[0][0].transcript;
+            };
+            recognition.start();
+        }
+
+        function reportMessage() {
+            let message = document.getElementById("message").value;
+            let correct_label = prompt("Was this message Spam or Not Spam? (Type 'Spam' or 'Not Spam')");
+
+            fetch("/report", {
+                method: "POST",
+                body: new URLSearchParams({ "message": message, "correct_label": correct_label }),
+                headers: { "Content-Type": "application/x-www-form-urlencoded" }
+            })
+            .then(response => response.json())
+            .then(data => alert(data.status))
+            .catch(error => console.error("Error:", error));
+        }
+
+        function toggleDarkMode() {
+        document.body.classList.toggle("bg-gray-900"); // Dark mode background
+        document.body.classList.toggle("text-white");  // Change all text to white
+        
+        // Toggle input field styles for visibility
+        let inputField = document.getElementById("message");
+        inputField.classList.toggle("bg-gray-800");
+        inputField.classList.toggle("text-white");
+        inputField.classList.toggle("border-gray-600");
+
+        // Toggle result & confidence text color
+        document.getElementById("result").classList.toggle("text-gray-500");
+        document.getElementById("confidence").classList.toggle("text-gray-500");
+
+        // Toggle spam stats color
+        document.getElementById("stats").classList.toggle("text-gray-400");
+
+        // **Ensure heading stays black in both modes**
+        document.getElementById("heading").classList.toggle("text-gray-400");
+        
+    }
+
+        function updateStats() {
+            fetch("/stats")
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("stats").innerText = `Spam: ${data.spam_count}, Not Spam: ${data.not_spam_count}`;
+            });
+        }
+        updateStats();
+    </script>
+</body>
+</html>
